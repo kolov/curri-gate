@@ -1,0 +1,49 @@
+server:
+  port: 8080
+
+feign:
+  hystrix:
+    enabled: false
+
+zuul:
+  routes:
+    docs:
+      path: /docs/**
+      serviceId: service-docs
+
+oauth2:
+  google:
+    client:
+#      clientId: from secrets
+#      clientSecret: from secrets
+      accessTokenUri: https://www.googleapis.com/oauth2/v4/token
+      userAuthorizationUri: https://accounts.google.com/o/oauth2/v2/auth
+      clientAuthenticationScheme: form
+      scope:
+        - openid
+        - email
+        - profile
+    resource:
+      userInfoUri: https://www.googleapis.com/oauth2/v3/userinfo
+      preferTokenInfo: true
+  facebook:
+    client:
+#      clientId: ${facebook.clientId} from secrets
+#      clientSecret: ${facebook.secret} from secrets
+      accessTokenUri: https://graph.facebook.com/oauth/access_token
+      userAuthorizationUri: https://www.facebook.com/dialog/oauth
+      tokenName: oauth_token
+      authenticationScheme: query
+      clientAuthenticationScheme: form
+    resource:
+      userInfoUri: https://graph.facebook.com/me
+
+
+
+service-users:
+  ribbon:
+    listOfServers: ${SERVICE_USERS:localhost:8501}
+
+service-docs:
+  ribbon:
+    listOfServers: ${SERVICE_DOCS:localhost:8502}
