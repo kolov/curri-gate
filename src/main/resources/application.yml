@@ -1,6 +1,7 @@
 server:
   port: 8080
 
+
 feign:
   hystrix:
     enabled: false
@@ -23,9 +24,7 @@ oauth2:
         - openid
         - email
         - profile
-    resource:
       userInfoUri: https://www.googleapis.com/oauth2/v3/userinfo
-      preferTokenInfo: true
   facebook:
     client:
 #      clientId: ${facebook.clientId} from secrets
