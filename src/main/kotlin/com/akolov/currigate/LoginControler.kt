@@ -8,6 +8,8 @@ import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.GenericJson
 import com.google.api.client.json.JsonObjectParser
 import com.google.api.client.json.jackson.JacksonFactory
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
@@ -30,71 +32,60 @@ open class LoginControler(val google: AuthClient) {
 
     @RequestMapping(method = arrayOf(RequestMethod.GET), value = "/login/google")
     open fun login(req: HttpServletRequest, response: HttpServletResponse) {
-
         val url = AuthorizationRequestUrl(google.userAuthorizationUri, google.clientId,
                 Arrays.asList("code"))
-                .setScopes(Arrays.asList("openid", "email", "profile"))
-                .setRedirectUri(req.requestURL.toString()).build()
-        println(url)
+                .setScopes(google.scope)
+                .setRedirectUri(rebuildUrl(req)).build()
         response.sendRedirect(url)
     }
 
     @RequestMapping(method = arrayOf(RequestMethod.GET), value = "/login/google", params = arrayOf("code"))
-    open fun loginCallback(req: HttpServletRequest) {
+    open fun loginCallback(req: HttpServletRequest): ResponseEntity<String> {
 
+        val authResponse = AuthorizationCodeResponseUrl(rebuildUrl(req));
+        if (authResponse.getError() != null) {
+            return ResponseEntity(HttpStatus.UNAUTHORIZED);
+        }
+        try {
+            val response = AuthorizationCodeTokenRequest(NetHttpTransport(), JacksonFactory(),
+                    GenericUrl(google.accessTokenUri), authResponse.getCode())
+                    .setRedirectUri(req.requestURL.toString())
+                    .setClientAuthentication(
+                            BasicAuthentication(google.clientId, google.clientSecret))
+                    .execute();
+            val credential = Credential(BearerToken.authorizationHeaderAccessMethod())
+            credential.setFromTokenResponse(response)
+            val userInfo = getUserInfo(credential.accessToken)
+            return ResponseEntity(userInfo.toString(), HttpStatus.OK);
+
+        } catch (e: TokenResponseException) {
+            return ResponseEntity(HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    private fun getUserInfo(accessToken: String): GenericJson? {
+        val jsonFactory = JacksonFactory()
+        val requestFactory = NetHttpTransport().createRequestFactory()
+        val request = requestFactory.buildGetRequest(GenericUrl(google.userInfoUri))
+        request.setParser(JsonObjectParser(jsonFactory))
+        request.setThrowExceptionOnExecuteError(false)
+        val headers = HttpHeaders()
+        headers.setAuthorization("Bearer " + accessToken)
+        request.setHeaders(headers)
+        val userInfoResponse = request.execute()
+        if (userInfoResponse.isSuccessStatusCode()) {
+            return userInfoResponse.parseAs(GenericJson::class.java)
+        } else {
+            return null
+        }
+    }
+
+    private fun rebuildUrl(req: HttpServletRequest): String {
         val fullUrlBuf = req.getRequestURL();
         if (req.getQueryString() != null) {
             fullUrlBuf.append('?').append(req.getQueryString());
         }
-        val authResponse = AuthorizationCodeResponseUrl(fullUrlBuf.toString());
-        // check for user-denied error
-        if (authResponse.getError() != null) {
-            // authorization denied...
-        } else {
-            try {
-                val response = AuthorizationCodeTokenRequest(NetHttpTransport(), JacksonFactory(),
-                        GenericUrl(google.accessTokenUri), authResponse.getCode())
-                        .setRedirectUri(req.requestURL.toString())
-                        .setClientAuthentication(
-                                BasicAuthentication(google.clientId, google.clientSecret))
-                        .execute();
-                val credential = Credential(BearerToken.authorizationHeaderAccessMethod())
-                credential.setFromTokenResponse(response )
-
-
-
-
-                val jsonFactory = JacksonFactory()
-                val requestFactory = NetHttpTransport().createRequestFactory()
-                val request = requestFactory.buildGetRequest(GenericUrl(google.userInfoUri))
-                request.setParser(JsonObjectParser(jsonFactory))
-                request.setThrowExceptionOnExecuteError(false)
-                val headers = HttpHeaders()
-                headers.setAuthorization("Bearer " + credential.accessToken)
-                request.setHeaders(headers)
-                val userInfoResponse = request.execute()
-                if (userInfoResponse.isSuccessStatusCode()) {
-                    val userInfo = userInfoResponse.parseAs(GenericJson::class.java)
-                    System.out.println("Access token: " + userInfo);
-                }
-
-
-            } catch (e: TokenResponseException) {
-                if (e.getDetails() != null) {
-                    System.err.println("Error: " + e.getDetails().getError());
-                    if (e.getDetails().getErrorDescription() != null) {
-                        System.err.println(e.getDetails().getErrorDescription());
-                    }
-                    if (e.getDetails().getErrorUri() != null) {
-                        System.err.println(e.getDetails().getErrorUri());
-                    }
-                } else {
-                    System.err.println(e.message);
-                }
-            }
-
-
-        }
+        return fullUrlBuf.toString()
     }
 
 
