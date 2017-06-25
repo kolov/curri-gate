@@ -9,6 +9,8 @@ public class AuthClient {
     private String clientSecret;
     private String accessTokenUri;
     private String userAuthorizationUri;
+    private String userInfoUri;
+    private List<String> scope;
     private String clientAuthenticationScheme;
 
     public String getUserInfoUri() {
@@ -18,9 +20,6 @@ public class AuthClient {
     public void setUserInfoUri(String userInfoUri) {
         this.userInfoUri = userInfoUri;
     }
-
-    private String userInfoUri;
-    private List<String> scope;
 
 
     public String getClientId() {

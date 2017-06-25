@@ -54,3 +54,10 @@ dependencyManagement {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
     }
 }
+
+task(copyDockerfile, type: Copy) {
+    from(file('Dockerfile'))
+    into(buildDir.absolutePath + '/libs')
+}
+
+build.dependsOn copyDockerfile

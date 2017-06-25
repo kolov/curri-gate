@@ -1,0 +1,33 @@
+machine:
+  services:
+    - docker
+  environment:
+    PROJECT_NAME: iconic-setup-91510
+    CLUSTER_NAME: cluster-1
+    CLOUDSDK_COMPUTE_ZONE: europe-west1-b
+    APP_NAME: curri-gate
+
+dependencies:
+  override:
+    - ./gradlew build
+
+
+deployment:
+  prod:
+    branch: master
+    commands:
+      - echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
+      - sudo /opt/google-cloud-sdk/bin/gcloud --quiet components update --version 158.0.0
+      - sudo /opt/google-cloud-sdk/bin/gcloud --quiet components update kubectl --version 158.0.0
+      - sudo /opt/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
+      - sudo /opt/google-cloud-sdk/bin/gcloud config set project $PROJECT_NAME
+      - sudo /opt/google-cloud-sdk/bin/gcloud config set container/cluster $CLUSTER_NAME
+      - sudo /opt/google-cloud-sdk/bin/gcloud config set compute/zone ${CLOUDSDK_COMPUTE_ZONE}
+      - sudo /opt/google-cloud-sdk/bin/gcloud container clusters get-credentials $CLUSTER_NAME
+      - cp docker/nginx/nginx.conf dist
+      - cp docker/nginx/Dockerfile dist
+      - docker build -t eu.gcr.io/${PROJECT_NAME}/${APP_NAME}:$CIRCLE_SHA1 dist
+      - sudo /opt/google-cloud-sdk/bin/gcloud docker -- push eu.gcr.io/${PROJECT_NAME}/${APP_NAME}:$CIRCLE_SHA1
+      - sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
+      - sudo chown -R $USER /home/ubuntu/.config
+      - kubectl patch deployment ${APP_NAME} -p '{"spec":{"template":{"spec":{"containers":[{"name":"'${APP_NAME}'", "image":"eu.gcr.io/'${PROJECT_NAME}/${APP_NAME}:${CIRCLE_SHA1}'"}]}}}}'

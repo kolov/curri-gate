@@ -7,7 +7,7 @@ import org.junit.Test
 class JwtTest {
 
     @Test
-    fun testCreate() {
+    fun testCreateVerify() {
         val jwt = Jwt("secret")
         val token = jwt.create("123")
         val subject = jwt.getSubject(token)
