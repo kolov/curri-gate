@@ -1,0 +1,16 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: curri-gate
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: curri-gate
+    spec:
+      containers:
+      - name: curri-gate
+        image: eu.gcr.io/iconic-setup-91510/curri-gate:%VERSION%
+        ports:
+        - containerPort: 9000
