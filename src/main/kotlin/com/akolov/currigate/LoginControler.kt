@@ -82,8 +82,9 @@ open class LoginControler(val google: AuthClient) {
 
     private fun rebuildUrl(req: HttpServletRequest): String {
         val fullUrlBuf = req.getRequestURL();
-        if (req.getQueryString() != null) {
-            fullUrlBuf.append('?').append(req.getQueryString());
+        val queryString = req.getQueryString()
+        if (queryString != null && queryString.length > 0 ) {
+            fullUrlBuf.append('?').append(queryString);
         }
         return fullUrlBuf.toString()
     }
