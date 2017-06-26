@@ -15,22 +15,22 @@ spec:
         ports:
         - containerPort: 9000
         env:
-        - name: oauth2.google.client.clientId
+        - name: OAUTH2_GOOGLE_CLIENT_CLIENTID
           valueFrom:
             configMapKeyRef:
               name: curri
               key: oauth2.google.client.clientId
-        - name: oauth2.google.client.clientSecret
+        - name: OAUTH2_GOOGLE_CLIENT_CLIENTSECRET
           valueFrom:
             configMapKeyRef:
               name: curri
               key: oauth2.google.client.clientSecret
-        - name: oauth2.facebook.client.clientId
+        - name: OAUTH2_FACEBOOK_CLIENT_CLIENTID
           valueFrom:
             configMapKeyRef:
               name: curri
               key: oauth2.facebook.client.clientId
-        - name: oauth2.facebook.client.clientSecret
+        - name: OAUTH2_FACEBOOK_CLIENT_CLIENTSECRET
           valueFrom:
             configMapKeyRef:
               name: curri
