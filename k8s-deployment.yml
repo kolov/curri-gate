@@ -20,7 +20,7 @@ spec:
             configMapKeyRef:
               name: curri
               key: oauth2.google.client.clientId
-        - name: OAUTH2_GOOGLE_CLIENT_CLIENTSECRET
+        - name: OAUTH2_GOOGLE_CLIENT_SECRET
           valueFrom:
             configMapKeyRef:
               name: curri
