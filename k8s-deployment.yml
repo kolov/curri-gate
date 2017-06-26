@@ -14,3 +14,24 @@ spec:
         image: eu.gcr.io/iconic-setup-91510/curri-gate:%VERSION%
         ports:
         - containerPort: 9000
+        env:
+        - name: oauth2.google.client.clientId
+          valueFrom:
+            configMapKeyRef:
+              name: curri
+              key: oauth2.google.client.clientId
+        - name: oauth2.google.client.clientSecret
+          valueFrom:
+            configMapKeyRef:
+              name: curri
+              key: oauth2.google.client.clientSecret
+        - name: oauth2.facebook.client.clientId
+          valueFrom:
+            configMapKeyRef:
+              name: curri
+              key: oauth2.facebook.client.clientId
+        - name: oauth2.facebook.client.clientSecret
+          valueFrom:
+            configMapKeyRef:
+              name: curri
+              key: oauth2.facebook.client.clientSecret
