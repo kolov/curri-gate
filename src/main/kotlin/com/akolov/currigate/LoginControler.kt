@@ -13,22 +13,16 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.ResponseBody
-import java.security.Principal
 import java.util.*
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 
 @Controller
-open class LoginControler(val google: AuthClient) {
+open class LoginControler(val google: AuthClient,
+                          val userService: UserService,
+                          val identityFilter: IdentityFilter) {
 
-
-    @RequestMapping("/")
-    @ResponseBody
-    open fun handleRootRequest(principal: Principal?): String {
-        return principal.toString()
-    }
 
     @RequestMapping(method = arrayOf(RequestMethod.GET), value = "/login/google")
     open fun login(req: HttpServletRequest, response: HttpServletResponse) {
@@ -40,7 +34,7 @@ open class LoginControler(val google: AuthClient) {
     }
 
     @RequestMapping(method = arrayOf(RequestMethod.GET), value = "/login/google", params = arrayOf("code"))
-    open fun loginCallback(req: HttpServletRequest): ResponseEntity<String> {
+    open fun loginCallback(req: HttpServletRequest): ResponseEntity<User> {
 
         val authResponse = AuthorizationCodeResponseUrl(rebuildUrl(req));
         if (authResponse.getError() != null) {
@@ -56,10 +50,40 @@ open class LoginControler(val google: AuthClient) {
             val credential = Credential(BearerToken.authorizationHeaderAccessMethod())
             credential.setFromTokenResponse(response)
             val userInfo = getUserInfo(credential.accessToken)
-            return ResponseEntity(userInfo.toString(), HttpStatus.OK);
-
+            userLoggedin(req, userInfo)
+            val headers = org.springframework.http.HttpHeaders()
+            headers.add("Location", "/")
+            return ResponseEntity(headers, HttpStatus.FOUND)
         } catch (e: TokenResponseException) {
-            return ResponseEntity(HttpStatus.UNAUTHORIZED);
+            return ResponseEntity(HttpStatus.UNAUTHORIZED)
+        }
+    }
+
+    private fun userLoggedin(request: HttpServletRequest, userInfo: GenericJson?):
+            ResponseEntity<User> {
+        val user = findOrCreateUser(userInfo!!)
+        identityFilter.userChanged(request, user)
+        return ResponseEntity(HttpStatus.UNAUTHORIZED);
+    }
+
+    private fun findOrCreateUser(userInfo: GenericJson): User {
+        val user = userService.findByIdentity(userInfo.get("sub") as String)
+        if (user != null) {
+            return user
+        } else {
+
+            val newIdentity = Identity(
+                    sub = userInfo.get("sub") as String,
+                    name = userInfo.get("name") as String,
+                    givenName = userInfo.get("given_name") as String,
+                    familyName = userInfo.get("family_name") as String,
+                    profile = userInfo.get("profile") as String,
+                    picture = userInfo.get("picture") as String,
+                    email = userInfo.get("email") as String,
+                    gender = userInfo.get("gender") as String,
+                    locale = userInfo.get("locale") as String
+            )
+            return userService.register(newIdentity)
         }
     }
 
@@ -83,7 +107,7 @@ open class LoginControler(val google: AuthClient) {
     private fun rebuildUrl(req: HttpServletRequest): String {
         val fullUrlBuf = req.getRequestURL();
         val queryString = req.getQueryString()
-        if (queryString != null && queryString.length > 0 ) {
+        if (queryString != null && queryString.length > 0) {
             fullUrlBuf.append('?').append(queryString);
         }
         return fullUrlBuf.toString()

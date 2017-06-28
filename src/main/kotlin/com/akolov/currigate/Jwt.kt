@@ -13,15 +13,16 @@ class Jwt(val secret: String) {
             .withIssuer(issuer)
             .build()
 
-    fun create(subject: String): String {
+    fun create(user: User): String {
         val token = JWT.create()
                 .withIssuer(issuer)
-                .withClaim("sub", subject)
+                .withClaim("sub", user.id)
                 .sign(algorithm)
         return token
     }
 
-    fun getSubject(token: String): String {
-        return verifier.verify(token).subject
+    fun getUser(token: String): User {
+        val verified = verifier.verify(token)
+        return User(verified.subject)
     }
 }

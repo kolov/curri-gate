@@ -9,8 +9,8 @@ class JwtTest {
     @Test
     fun testCreateVerify() {
         val jwt = Jwt("secret")
-        val token = jwt.create("123")
-        val subject = jwt.getSubject(token)
+        val token = jwt.create(User("123"))
+        val subject = jwt.getUser(token)
         assertEquals(subject, "123")
     }
 }
