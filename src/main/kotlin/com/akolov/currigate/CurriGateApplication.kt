@@ -56,7 +56,10 @@ class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserSe
 
     fun userChanged(request: HttpServletRequest, user: ThinUser) {
         request.setAttribute(ATTR_USER, user)
-        request.setAttribute(ATTR_COOKIE, Cookie(COOKIE_NAME, jwt.create(user)))
+        val cookie = Cookie(COOKIE_NAME, jwt.create(user))
+        cookie.maxAge = 30 * 24 * 60 * 60
+        cookie.path = "/"
+        request.setAttribute(ATTR_COOKIE, cookie)
     }
 
 
