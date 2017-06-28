@@ -8,25 +8,17 @@ import javax.servlet.http.HttpServletRequest
 
 
 @Controller
-open class RouterControler( ) {
+open class RouterControler(val userService: UserService) {
 
 
     @RequestMapping("/service/{serviceName}/**")
     @ResponseBody
-    open fun route(@PathVariable  serviceName: String): String {
-        return serviceName
-    }
-
-
-    private fun rebuildUrl(req: HttpServletRequest): String {
-        val fullUrlBuf = req.getRequestURL();
-        val queryString = req.getQueryString()
-        if (queryString != null && queryString.length > 0 ) {
-            fullUrlBuf.append('?').append(queryString);
+    open fun route(req: HttpServletRequest, @PathVariable serviceName: String): Any? {
+        if (serviceName == "user") {
+            val user = req.getAttribute(IdentityFilter.ATTR_USER) as ThinUser
+            return userService.findThickUserByUserId(user.id)
         }
-        return fullUrlBuf.toString()
+        return "OK"
     }
-
-
 }
 

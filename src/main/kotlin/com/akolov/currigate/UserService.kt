@@ -9,44 +9,47 @@ import java.util.*
 
 @Component
 class UserService {
-    val usersByUserId: MutableMap<String, User> = HashMap()
-    val usersByIdentity: MutableMap<String, User> = HashMap()
+    val usersByUserId: MutableMap<String, ThinUser> = HashMap()
+    val usersByIdentity: MutableMap<String, ThinUser> = HashMap()
     val identities: MutableMap<String, Identity> = HashMap()
+    val identitiesByUserId: MutableMap<String, Identity> = HashMap()
 
-    fun findByIdentity(sub: String): User? {
-        val id = identities.get(sub)
-        if (id != null) {
-            return usersByIdentity.get(id.sub)
+    fun findThinUserByIdentity(sub: String): ThinUser? {
+        val identity = identities.get(sub)
+        if (identity != null) {
+            return usersByIdentity.get(identity.sub)
         }
         return null
     }
 
-    fun register(identity: Identity) : User {
+    fun findThickUserByUserId(id: String): ThickUser? {
+        val user = usersByUserId.get(id)
+        if (user != null) {
+            return ThickUser(id, identitiesByUserId.get(id))
+        }
+        return null
+    }
+
+
+    fun register(identity: Identity): ThinUser {
         identities.put(identity.sub, identity)
-        if( usersByIdentity.get(identity.sub) != null)
+        if (usersByIdentity.get(identity.sub) != null)
             throw Exception("Identity exists")
         var user = newUser()
         usersByIdentity.put(identity.sub, user)
+        identitiesByUserId.put(user.id, identity)
         return user
     }
 
-    fun create() : User {
+    fun create(): ThinUser {
         var user = newUser()
         usersByUserId.put(user.id, user)
         return user
     }
 
-    private fun newUser() : User {
-        return User(UUID.randomUUID().toString())
+    private fun newUser(): ThinUser {
+        return ThinUser(UUID.randomUUID().toString())
     }
+
 }
 
-data class Identity(val sub: String,
-                    val name: String,
-                    val givenName: String,
-                    val familyName: String,
-                    val profile: String,
-                    val picture: String,
-                    val email: String,
-                    val gender: String,
-                    val locale: String)

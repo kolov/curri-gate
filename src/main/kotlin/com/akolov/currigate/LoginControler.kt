@@ -34,7 +34,7 @@ open class LoginControler(val google: AuthClient,
     }
 
     @RequestMapping(method = arrayOf(RequestMethod.GET), value = "/login/google", params = arrayOf("code"))
-    open fun loginCallback(req: HttpServletRequest): ResponseEntity<User> {
+    open fun loginCallback(req: HttpServletRequest): ResponseEntity<ThinUser> {
 
         val authResponse = AuthorizationCodeResponseUrl(rebuildUrl(req));
         if (authResponse.getError() != null) {
@@ -50,7 +50,8 @@ open class LoginControler(val google: AuthClient,
             val credential = Credential(BearerToken.authorizationHeaderAccessMethod())
             credential.setFromTokenResponse(response)
             val userInfo = getUserInfo(credential.accessToken)
-            userLoggedin(req, userInfo)
+            val user = findOrCreateUser(userInfo!!)
+            identityFilter.userChanged(req, user)
             val headers = org.springframework.http.HttpHeaders()
             headers.add("Location", "/")
             return ResponseEntity(headers, HttpStatus.FOUND)
@@ -59,15 +60,10 @@ open class LoginControler(val google: AuthClient,
         }
     }
 
-    private fun userLoggedin(request: HttpServletRequest, userInfo: GenericJson?):
-            ResponseEntity<User> {
-        val user = findOrCreateUser(userInfo!!)
-        identityFilter.userChanged(request, user)
-        return ResponseEntity(HttpStatus.UNAUTHORIZED);
-    }
 
-    private fun findOrCreateUser(userInfo: GenericJson): User {
-        val user = userService.findByIdentity(userInfo.get("sub") as String)
+
+    private fun findOrCreateUser(userInfo: GenericJson): ThinUser {
+        val user = userService.findThinUserByIdentity(userInfo.get("sub") as String)
         if (user != null) {
             return user
         } else {

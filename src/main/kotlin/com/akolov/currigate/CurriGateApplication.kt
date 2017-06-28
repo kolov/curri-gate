@@ -46,11 +46,15 @@ open class CurriGateApplication() {
 class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserService) : GenericFilterBean() {
 
 
+    companion object {
+
+        val ATTR_USER: String = "curri-user"
+    }
+
     val ATTR_COOKIE: String = "curri-cookie"
     val COOKIE_NAME: String = "curri"
-    val ATTR_USER: String = "curri-user"
 
-    fun userChanged(request: HttpServletRequest, user: User) {
+    fun userChanged(request: HttpServletRequest, user: ThinUser) {
         request.setAttribute(ATTR_USER, user)
         request.setAttribute(ATTR_COOKIE, Cookie(COOKIE_NAME, jwt.create(user)))
     }
@@ -66,8 +70,7 @@ class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserSe
             val cookie: Cookie? = httpRequest.cookies?.find { c -> c.name == COOKIE_NAME }
 
             if (cookie == null) {
-                val user = userService.create()
-
+                userChanged(request, userService.create())
             } else {
                 val user = jwt.getUser(cookie.value)
                 httpRequest.setAttribute(ATTR_USER, user)
