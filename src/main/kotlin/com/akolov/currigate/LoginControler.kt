@@ -27,7 +27,7 @@ open class LoginControler(val google: AuthClient,
 
     @RequestMapping(method = arrayOf(RequestMethod.POST), value = "/logout")
     open fun logout(req: HttpServletRequest, response: HttpServletResponse) {
-        identityFilter.userChanged(req, userService.create())
+        identityFilter.updateUserInRequest(req, userService.create())
     }
 
     @RequestMapping(method = arrayOf(RequestMethod.GET), value = "/login/google")
@@ -64,7 +64,7 @@ open class LoginControler(val google: AuthClient,
             val userInfo = getUserInfo(credential.accessToken)
             val currentUser = req.getAttribute(IdentityFilter.ATTR_USER) as ThinUser
             val user = findOrCreateUser(currentUser, userInfo!!)
-            identityFilter.userChanged(req, user)
+            identityFilter.updateUserInRequest(req, user)
             val headers = org.springframework.http.HttpHeaders()
             headers.add("Location", "/")
             return ResponseEntity(headers, HttpStatus.FOUND)

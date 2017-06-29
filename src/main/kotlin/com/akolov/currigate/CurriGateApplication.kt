@@ -54,12 +54,9 @@ class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserSe
     val ATTR_COOKIE: String = "curri-cookie"
     val COOKIE_NAME: String = "curri"
 
-    fun userChanged(request: HttpServletRequest, user: ThinUser) {
+    fun updateUserInRequest(request: HttpServletRequest, user: ThinUser) {
         request.setAttribute(ATTR_USER, user)
-        val cookie = Cookie(COOKIE_NAME, jwt.create(user))
-        cookie.maxAge = 30 * 24 * 60 * 60
-        cookie.path = "/"
-        request.setAttribute(ATTR_COOKIE, cookie)
+        request.setAttribute(ATTR_COOKIE, jwt.create(user))
     }
 
 
@@ -72,14 +69,20 @@ class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserSe
         val cookie: Cookie? = httpRequest.cookies?.find { c -> c.name == COOKIE_NAME }
 
         if (cookie == null) {
-            userChanged(request, userService.create())
+            updateUserInRequest(request, userService.create())
         } else {
             val user = jwt.getUser(cookie.value)
             httpRequest.setAttribute(ATTR_USER, user)
-            httpRequest.setAttribute(ATTR_COOKIE, cookie)
+            httpRequest.setAttribute(ATTR_COOKIE, cookie.value)
         }
 
         chain.doFilter(request, response)
-        httpResponse.addCookie(httpRequest.getAttribute(ATTR_COOKIE) as Cookie?)
+        val newCookieValue = request.getAttribute(ATTR_COOKIE) as String
+        if (cookie == null || cookie.value != newCookieValue) {
+            val newCookie = Cookie(COOKIE_NAME, newCookieValue)
+            newCookie.maxAge = 30 * 24 * 60 * 60
+            newCookie.path = "/"
+            httpResponse.addCookie(newCookie as Cookie?)
+        }
     }
 }
