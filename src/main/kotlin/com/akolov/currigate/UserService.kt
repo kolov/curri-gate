@@ -23,11 +23,7 @@ class UserService {
     }
 
     fun findThickUserByUserId(id: String): ThickUser? {
-        val user = usersByUserId.get(id)
-        if (user != null) {
-            return ThickUser(id, identitiesByUserId.get(id))
-        }
-        return null
+        return ThickUser(id, identitiesByUserId.get(id))
     }
 
 

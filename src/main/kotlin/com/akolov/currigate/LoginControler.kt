@@ -8,6 +8,7 @@ import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.GenericJson
 import com.google.api.client.json.JsonObjectParser
 import com.google.api.client.json.jackson.JacksonFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
@@ -26,24 +27,30 @@ open class LoginControler(val google: AuthClient,
 
     @RequestMapping(method = arrayOf(RequestMethod.GET), value = "/login/google")
     open fun login(req: HttpServletRequest, response: HttpServletResponse) {
+
+
         val url = AuthorizationRequestUrl(google.userAuthorizationUri, google.clientId,
                 Arrays.asList("code"))
                 .setScopes(google.scope)
-                .setRedirectUri(rebuildUrl(req)).build()
+                .setRedirectUri(rebuildUrl(req, false)).build()
         response.sendRedirect(url)
     }
+
+    @Value("\${APPPORT:80}")
+    var applicationPort: Int = 80
 
     @RequestMapping(method = arrayOf(RequestMethod.GET), value = "/login/google", params = arrayOf("code"))
     open fun loginCallback(req: HttpServletRequest): ResponseEntity<ThinUser> {
 
-        val authResponse = AuthorizationCodeResponseUrl(rebuildUrl(req));
+
+        val authResponse = AuthorizationCodeResponseUrl(rebuildUrl(req, true));
         if (authResponse.getError() != null) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED);
         }
         try {
             val response = AuthorizationCodeTokenRequest(NetHttpTransport(), JacksonFactory(),
                     GenericUrl(google.accessTokenUri), authResponse.getCode())
-                    .setRedirectUri(req.requestURL.toString())
+                    .setRedirectUri(rebuildUrl(req, false))
                     .setClientAuthentication(
                             BasicAuthentication(google.clientId, google.clientSecret))
                     .execute();
@@ -59,7 +66,6 @@ open class LoginControler(val google: AuthClient,
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
     }
-
 
 
     private fun findOrCreateUser(userInfo: GenericJson): ThinUser {
@@ -100,13 +106,17 @@ open class LoginControler(val google: AuthClient,
         }
     }
 
-    private fun rebuildUrl(req: HttpServletRequest): String {
-        val fullUrlBuf = req.getRequestURL();
-        val queryString = req.getQueryString()
-        if (queryString != null && queryString.length > 0) {
-            fullUrlBuf.append('?').append(queryString);
+    private fun rebuildUrl(req: HttpServletRequest, withParams: Boolean): String {
+        var fullUrlBuf = if (req.isSecure) "https" else "http"
+        fullUrlBuf += "://" + req.serverName + ":" + applicationPort + req.servletPath
+
+        if( withParams) {
+            val queryString = req.getQueryString()
+            if (queryString != null && queryString.length > 0) {
+                fullUrlBuf += "?" + queryString;
+            }
         }
-        return fullUrlBuf.toString()
+        return fullUrlBuf
     }
 
 
