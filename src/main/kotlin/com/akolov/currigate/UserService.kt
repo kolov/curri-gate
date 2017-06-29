@@ -28,13 +28,18 @@ class UserService {
 
 
     fun register(identity: Identity): ThinUser {
+        return register(newUser(), identity)
+    }
+
+    fun register(user: ThinUser, identity: Identity): ThinUser {
         identities.put(identity.sub, identity)
         if (usersByIdentity.get(identity.sub) != null)
             throw Exception("Identity exists")
-        var user = newUser()
-        usersByIdentity.put(identity.sub, user)
+
+        val registeredUser = user.copy(registered = true)
+        usersByIdentity.put(identity.sub, registeredUser)
         identitiesByUserId.put(user.id, identity)
-        return user
+        return registeredUser
     }
 
     fun create(): ThinUser {
@@ -44,7 +49,7 @@ class UserService {
     }
 
     private fun newUser(): ThinUser {
-        return ThinUser(UUID.randomUUID().toString())
+        return ThinUser(UUID.randomUUID().toString(), false)
     }
 
 }

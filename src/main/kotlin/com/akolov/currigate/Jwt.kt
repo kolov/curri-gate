@@ -23,6 +23,6 @@ class Jwt(val secret: String) {
 
     fun getUser(token: String): ThinUser {
         val verified = verifier.verify(token)
-        return ThinUser(verified.subject)
+        return ThinUser(verified.subject, false)
     }
 }

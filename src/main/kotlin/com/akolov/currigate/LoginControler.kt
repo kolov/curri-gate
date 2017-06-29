@@ -25,6 +25,11 @@ open class LoginControler(val google: AuthClient,
                           val identityFilter: IdentityFilter) {
 
 
+    @RequestMapping(method = arrayOf(RequestMethod.POST), value = "/logout")
+    open fun logout(req: HttpServletRequest, response: HttpServletResponse) {
+        identityFilter.userChanged(req, userService.create())
+    }
+
     @RequestMapping(method = arrayOf(RequestMethod.GET), value = "/login/google")
     open fun login(req: HttpServletRequest, response: HttpServletResponse) {
 
@@ -57,7 +62,8 @@ open class LoginControler(val google: AuthClient,
             val credential = Credential(BearerToken.authorizationHeaderAccessMethod())
             credential.setFromTokenResponse(response)
             val userInfo = getUserInfo(credential.accessToken)
-            val user = findOrCreateUser(userInfo!!)
+            val currentUser = req.getAttribute(IdentityFilter.ATTR_USER) as ThinUser
+            val user = findOrCreateUser(currentUser, userInfo!!)
             identityFilter.userChanged(req, user)
             val headers = org.springframework.http.HttpHeaders()
             headers.add("Location", "/")
@@ -68,7 +74,7 @@ open class LoginControler(val google: AuthClient,
     }
 
 
-    private fun findOrCreateUser(userInfo: GenericJson): ThinUser {
+    private fun findOrCreateUser(currentUser: ThinUser, userInfo: GenericJson): ThinUser {
         val user = userService.findThinUserByIdentity(userInfo.get("sub") as String)
         if (user != null) {
             return user
@@ -85,7 +91,12 @@ open class LoginControler(val google: AuthClient,
                     gender = userInfo.get("gender") as String,
                     locale = userInfo.get("locale") as String
             )
-            return userService.register(newIdentity)
+            if (currentUser.registered) {
+                return userService.register(newIdentity)
+            } else {
+                return userService.register(currentUser, newIdentity)
+            }
+
         }
     }
 
@@ -107,16 +118,20 @@ open class LoginControler(val google: AuthClient,
     }
 
     private fun rebuildUrl(req: HttpServletRequest, withParams: Boolean): String {
-        var fullUrlBuf = if (req.isSecure) "https" else "http"
-        fullUrlBuf += "://" + req.serverName + ":" + applicationPort + req.servletPath
+        var result = if (req.isSecure) "https" else "http"
+        result += "://" + req.serverName
+        if (applicationPort != 80) {
+            result += ":" + applicationPort
+        }
+        result += req.servletPath
 
-        if( withParams) {
+        if (withParams) {
             val queryString = req.getQueryString()
             if (queryString != null && queryString.length > 0) {
-                fullUrlBuf += "?" + queryString;
+                result += "?" + queryString;
             }
         }
-        return fullUrlBuf
+        return result
     }
 
 

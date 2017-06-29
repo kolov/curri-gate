@@ -68,18 +68,17 @@ class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserSe
         val httpRequest: HttpServletRequest = request as HttpServletRequest
         val httpResponse: HttpServletResponse = response as HttpServletResponse
 
-        val url = httpRequest.requestURL.toString()
-        if (!url.startsWith("/login")) {
-            val cookie: Cookie? = httpRequest.cookies?.find { c -> c.name == COOKIE_NAME }
 
-            if (cookie == null) {
-                userChanged(request, userService.create())
-            } else {
-                val user = jwt.getUser(cookie.value)
-                httpRequest.setAttribute(ATTR_USER, user)
-                httpRequest.setAttribute(ATTR_COOKIE, cookie)
-            }
+        val cookie: Cookie? = httpRequest.cookies?.find { c -> c.name == COOKIE_NAME }
+
+        if (cookie == null) {
+            userChanged(request, userService.create())
+        } else {
+            val user = jwt.getUser(cookie.value)
+            httpRequest.setAttribute(ATTR_USER, user)
+            httpRequest.setAttribute(ATTR_COOKIE, cookie)
         }
+
         chain.doFilter(request, response)
         httpResponse.addCookie(httpRequest.getAttribute(ATTR_COOKIE) as Cookie?)
     }

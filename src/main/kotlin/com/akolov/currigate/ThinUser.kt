@@ -1,6 +1,6 @@
 package com.akolov.currigate
 
-data class ThinUser(val id: String) {
+data class ThinUser(val id: String, val registered: Boolean) {
 
 
 }
