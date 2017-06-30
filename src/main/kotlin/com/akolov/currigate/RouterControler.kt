@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServletRequest
 
 
 @Controller
-open class RouterControler(val userService: UserService) {
+open class RouterControler(val userService: InMemoryUserService) {
 
 
     @RequestMapping("/service/{serviceName}/**")
@@ -16,7 +16,7 @@ open class RouterControler(val userService: UserService) {
     open fun route(req: HttpServletRequest, @PathVariable serviceName: String): Any? {
         if (serviceName == "user") {
             val user = req.getAttribute(IdentityFilter.ATTR_USER) as ThinUser
-            return userService.findThickUserByUserId(user.id)
+            return userService.userDetails(user.id)
         }
         return "OK"
     }

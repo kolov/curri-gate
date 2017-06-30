@@ -72,7 +72,7 @@ class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserSe
         log.debug("processing request ${httpRequest.servletPath}")
         if (cookie == null) {
             log.debug("no cookie in request")
-            updateUserInRequest(request, userService.create())
+            updateUserInRequest(request, userService.createNew())
         } else {
             val user = jwt.getUser(cookie.value)
             httpRequest.setAttribute(ATTR_USER, user)
@@ -83,7 +83,7 @@ class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserSe
         chain.doFilter(request, response)
         val newCookieValue = request.getAttribute(ATTR_COOKIE) as String
         if (cookie == null || cookie.value != newCookieValue) {
-            log.debug("setting cookie in respnse ")
+            log.debug("setting cookie in response ")
             val newCookie = Cookie(COOKIE_NAME, newCookieValue)
             newCookie.maxAge = 30 * 24 * 60 * 60
             newCookie.path = "/"

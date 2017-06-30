@@ -27,7 +27,7 @@ open class LoginControler(val google: AuthClient,
 
     @RequestMapping(method = arrayOf(RequestMethod.POST), value = "/logout")
     open fun logout(req: HttpServletRequest, response: HttpServletResponse) {
-        identityFilter.updateUserInRequest(req, userService.create())
+        identityFilter.updateUserInRequest(req, userService.createNew())
     }
 
     @RequestMapping(method = arrayOf(RequestMethod.GET), value = "/login/google")
@@ -91,12 +91,7 @@ open class LoginControler(val google: AuthClient,
                     gender = userInfo.get("gender") as String,
                     locale = userInfo.get("locale") as String
             )
-            if (currentUser.registered) {
-                return userService.register(newIdentity)
-            } else {
-                return userService.register(currentUser, newIdentity)
-            }
-
+            return userService.register(currentUser, newIdentity)
         }
     }
 
