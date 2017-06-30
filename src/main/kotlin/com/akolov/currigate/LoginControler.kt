@@ -126,9 +126,8 @@ open class LoginControler(val google: AuthClient,
         result += req.servletPath
 
         if (withParams) {
-            val queryString = req.getQueryString()
-            if (queryString != null && queryString.length > 0) {
-                result += "?" + queryString;
+            if (req.queryString != null && req.queryString.length > 0) {
+                result += "?" + req.queryString;
             }
         }
         return result

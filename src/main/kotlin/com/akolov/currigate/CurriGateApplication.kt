@@ -1,5 +1,6 @@
 package com.akolov.currigate
 
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -17,7 +18,7 @@ import javax.servlet.http.HttpServletResponse
 
 
 fun main(args: Array<String>) {
-    SpringApplication.run(CurriGateApplication::class.java, "--debug")
+    SpringApplication.run(CurriGateApplication::class.java )
 }
 
 @SpringBootApplication
@@ -46,8 +47,8 @@ open class CurriGateApplication() {
 class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserService) : GenericFilterBean() {
 
 
+    val log = LoggerFactory.getLogger(IdentityFilter.javaClass)
     companion object {
-
         val ATTR_USER: String = "curri-user"
     }
 
@@ -55,6 +56,7 @@ class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserSe
     val COOKIE_NAME: String = "curri"
 
     fun updateUserInRequest(request: HttpServletRequest, user: ThinUser) {
+        log.debug("assigning new user ${user.id}")
         request.setAttribute(ATTR_USER, user)
         request.setAttribute(ATTR_COOKIE, jwt.create(user))
     }
@@ -67,18 +69,21 @@ class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserSe
 
 
         val cookie: Cookie? = httpRequest.cookies?.find { c -> c.name == COOKIE_NAME }
-
+        log.debug("processing request ${httpRequest.servletPath}")
         if (cookie == null) {
+            log.debug("no cookie in request")
             updateUserInRequest(request, userService.create())
         } else {
             val user = jwt.getUser(cookie.value)
             httpRequest.setAttribute(ATTR_USER, user)
             httpRequest.setAttribute(ATTR_COOKIE, cookie.value)
+            log.debug("cookie found in request: user ${user.id}")
         }
 
         chain.doFilter(request, response)
         val newCookieValue = request.getAttribute(ATTR_COOKIE) as String
         if (cookie == null || cookie.value != newCookieValue) {
+            log.debug("setting cookie in respnse ")
             val newCookie = Cookie(COOKIE_NAME, newCookieValue)
             newCookie.maxAge = 30 * 24 * 60 * 60
             newCookie.path = "/"
