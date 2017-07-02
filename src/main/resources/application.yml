@@ -39,8 +39,8 @@ oauth2:
 
 service-users:
   ribbon:
-    listOfServers: ${SERVICE_USERS:localhost:8501}
+    listOfServers: ${SERVICE_USERS:service-users}
 
 service-docs:
   ribbon:
-    listOfServers: ${SERVICE_DOCS:localhost:8502}
+    listOfServers: ${SERVICE_DOCS:service-docs}

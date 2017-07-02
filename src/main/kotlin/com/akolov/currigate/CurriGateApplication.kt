@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.web.servlet.FilterRegistrationBean
+import org.springframework.cloud.netflix.feign.EnableFeignClients
 import org.springframework.context.annotation.Bean
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.GenericFilterBean
@@ -18,10 +19,11 @@ import javax.servlet.http.HttpServletResponse
 
 
 fun main(args: Array<String>) {
-    SpringApplication.run(CurriGateApplication::class.java )
+    SpringApplication.run(CurriGateApplication::class.java)
 }
 
 @SpringBootApplication
+@EnableFeignClients
 open class CurriGateApplication() {
 
 
@@ -43,11 +45,11 @@ open class CurriGateApplication() {
 }
 
 @Component
-
-class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserService) : GenericFilterBean() {
+class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserServiceDelegate) : GenericFilterBean() {
 
 
     val log = LoggerFactory.getLogger(IdentityFilter.javaClass)
+
     companion object {
         val ATTR_USER: String = "curri-user"
     }
@@ -72,7 +74,8 @@ class IdentityFilter(@Autowired val jwt: Jwt, @Autowired val userService: UserSe
         log.debug("processing request ${httpRequest.servletPath}")
         if (cookie == null) {
             log.debug("no cookie in request")
-            updateUserInRequest(request, userService.createNew())
+            val user = userService.createNew()
+            updateUserInRequest(request, user)
         } else {
             val user = jwt.getUser(cookie.value)
             httpRequest.setAttribute(ATTR_USER, user)

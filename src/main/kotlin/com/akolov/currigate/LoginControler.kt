@@ -75,7 +75,7 @@ open class LoginControler(val google: AuthClient,
 
 
     private fun findOrCreateUser(currentUser: ThinUser, userInfo: GenericJson): ThinUser {
-        val user = userService.findThinUserByIdentity(userInfo.get("sub") as String)
+        val user = userService.findByIdentity(userInfo.get("sub") as String)
         if (user != null) {
             return user
         } else {
@@ -91,7 +91,7 @@ open class LoginControler(val google: AuthClient,
                     gender = userInfo.get("gender") as String,
                     locale = userInfo.get("locale") as String
             )
-            return userService.register(currentUser, newIdentity)
+            return userService.register(currentUser.id, newIdentity)
         }
     }
 

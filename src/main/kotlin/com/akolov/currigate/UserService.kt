@@ -2,8 +2,8 @@ package com.akolov.currigate
 
 
 interface UserService {
-    fun createNew(): ThinUser
-    fun register(currentUser: ThinUser, identity: Identity): ThinUser
-    fun findThinUserByIdentity(sub: String): ThinUser?
     fun userDetails(id: String): ThickUser?
+    fun createNew(): ThinUser
+    fun register(currentUserId: String, identity: Identity): ThinUser
+    fun findByIdentity(sub: String): ThinUser?
 }

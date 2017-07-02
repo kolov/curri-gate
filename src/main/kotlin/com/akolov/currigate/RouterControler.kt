@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServletRequest
 
 
 @Controller
-open class RouterControler(val userService: InMemoryUserService) {
+open class RouterControler(val userService: UserService) {
 
 
     @RequestMapping("/service/{serviceName}/**")
