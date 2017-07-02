@@ -8,12 +8,15 @@ import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.GenericJson
 import com.google.api.client.json.JsonObjectParser
 import com.google.api.client.json.jackson.JacksonFactory
+import com.google.api.client.util.IOUtils
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.ResponseBody
 import java.util.*
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -41,8 +44,6 @@ open class LoginControler(val google: AuthClient,
         response.sendRedirect(url)
     }
 
-    @Value("\${APPPORT:80}")
-    var applicationPort: Int = 80
 
     @RequestMapping(method = arrayOf(RequestMethod.GET), value = "/login/google", params = arrayOf("code"))
     open fun loginCallback(req: HttpServletRequest): ResponseEntity<ThinUser> {
@@ -112,7 +113,10 @@ open class LoginControler(val google: AuthClient,
         }
     }
 
-    private fun rebuildUrl(req: HttpServletRequest, withParams: Boolean): String {
+    @Value("\${APPPORT:80}")
+    var applicationPort: Int = 80
+
+    fun rebuildUrl(req: HttpServletRequest, withParams: Boolean): String {
         var result = if (req.isSecure) "https" else "http"
         result += "://" + req.serverName
         if (applicationPort != 80) {
@@ -127,7 +131,52 @@ open class LoginControler(val google: AuthClient,
         }
         return result
     }
+}
 
 
+@Controller
+open class RouterControler(val userService: UserService) {
+
+
+    @RequestMapping("/service/{serviceName}/**")
+    @ResponseBody
+    open fun route(req: HttpServletRequest, resp: HttpServletResponse, @PathVariable serviceName: String): Any? {
+
+
+        if (serviceName == "user") {
+            val user = req.getAttribute(IdentityFilter.ATTR_USER) as ThinUser
+            return userService.userDetails(user.id)
+        }
+
+        val requestFactory = NetHttpTransport().createRequestFactory()
+        val request = requestFactory.buildGetRequest(GenericUrl(serviceUrl(req)))
+        request.throwExceptionOnExecuteError = false
+        val headers = HttpHeaders()
+        val user = req.getAttribute(IdentityFilter.ATTR_USER) as ThinUser
+        headers.set("x-curri-user", user.id)
+        headers.set("x-curri-app", "microdocs")
+        request.headers = headers
+        val otherResponse = request.execute()
+        resp.status = otherResponse.statusCode
+        IOUtils.copy(otherResponse.content, resp.outputStream)
+        return null
+    }
+
+    fun serviceUrl(req: HttpServletRequest): String {
+
+        val u = req.servletPath.substring("/service/".length)
+        val r = Regex("^([a-zA-Z0-9\\-].*)")
+        val found = r.find(u)
+        val serviceName = found!!.groupValues[0]
+        val mapped = System.getenv().get("SERVICE_" + serviceName.toUpperCase()) ?: serviceName
+
+
+        var result = "http://" + mapped + u.substring(serviceName.length)
+        if (req.queryString != null && req.queryString.length > 0) {
+            result += "?" + req.queryString;
+        }
+
+        return result
+    }
 }
 

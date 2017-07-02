@@ -5,6 +5,12 @@ import org.springframework.cloud.netflix.feign.FeignClient
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.*
 
+interface UserService {
+    fun userDetails(id: String): ThickUser?
+    fun createNew(): ThinUser
+    fun register(currentUserId: String, identity: Identity): ThinUser
+    fun findByIdentity(sub: String): ThinUser?
+}
 
 @FeignClient("service-users")
 interface UserServiceClient {
@@ -48,9 +54,9 @@ class UserServiceDelegate(val svc: UserServiceClient) : UserService {
 
     override fun findByIdentity(sub: String): ThinUser? {
         try {
-            return  svc.findByIdentity(roles, sub)
+            return svc.findByIdentity(roles, sub)
         } catch(e: Exception) {
-            if( e is FeignException && e.status() == 404) {
+            if (e is FeignException && e.status() == 404) {
                 return null
             }
             throw e
