@@ -113,6 +113,7 @@ open class LoginControler(val google: AuthClient,
         }
     }
 
+    // Application port as seen from outside (for callback url)
     @Value("\${APPPORT:80}")
     var applicationPort: Int = 80
 

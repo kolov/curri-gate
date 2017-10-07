@@ -1,0 +1,43 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: kolov/aws-cli:1.1
+        user: root
+    steps:
+      - checkout
+      - run: ./gradlew build
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build/libs
+            - k8s
+  deploy-k8s:
+    docker:
+      - image: kolov/aws-cli:1.1
+    environment:
+      - BUILD_TARGET_DIR: build/libs
+      - APP_NAME: curri-gate
+      - K8S_DEPLOYMENT: k8s/k8s-deployment.yml
+      - K8S_SERVICE: k8s/k8s-service.yml
+    steps:
+      - attach_workspace:
+          at: "."
+      - type: setup-docker-engine
+      - run: wget https://raw.githubusercontent.com/kolov/k8s-stuff/master/circleci/deploy-workflow.sh
+      - run: chmod +x deploy-workflow.sh
+      - run: cat ./deploy-workflow.sh
+      - run: ./deploy-workflow.sh
+workflows:
+  version: 2
+  build_and_deploy:
+    jobs:
+      - build:
+          context: org-global
+      - deploy-k8s:
+          requires:
+            - build
+          context: org-global
+
+
+
