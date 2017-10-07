@@ -1,10 +1,9 @@
 version: 2
 jobs:
   build:
-    docker:
-      - machine:
-          java:
-            version: openjdk8
+    machine:
+      java:
+        version: openjdk8
     steps:
       - checkout
       - run: ./gradlew build
