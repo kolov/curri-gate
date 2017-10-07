@@ -2,8 +2,9 @@ version: 2
 jobs:
   build:
     docker:
-      - image: kolov/java8
-        user: root
+      - machine:
+          java:
+            version: openjdk8
     steps:
       - checkout
       - run: ./gradlew build
