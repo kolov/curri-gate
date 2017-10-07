@@ -11,7 +11,7 @@ spec:
     spec:
       containers:
       - name: curri-gate
-        image: eu.gcr.io/iconic-setup-91510/curri-gate:%VERSION%
+        image: %REGISTRY%/%APP_NAME%:%VERSION%
         ports:
         - containerPort: 9000
         env:
