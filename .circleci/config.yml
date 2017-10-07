@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: kolov/java
+      - image: kolov/java8
         user: root
     steps:
       - checkout
